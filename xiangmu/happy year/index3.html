@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>兔年大吉</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <style>
+        div {
+  position: absolute;
+}
+
+.prompt {
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  text-align: center;
+  padding: 1em;
+  font-size: calc(1em + 1.5vw);
+  font-weight: bold;
+  background: linear-gradient(150deg, #9b5de5 0%, #f15bb5 20%, #fee440 40%, #00bbf9 60%, #00f5d4 80%);
+  background-size: 20% 20%;
+  background-color: #840b2a;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient 5s linear infinite paused;
+}
+@keyframes gradient {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 50% 50%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+.container {
+  top: 6em;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: 24em;
+  height: 24em;
+  background: rgb(227, 255, 127);
+  border-radius: 50%;
+  border: 1em solid #b2ffe5;
+  overflow: hidden;
+  filter: brightness(.9);
+}
+.body {
+  top: 12em;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: 14em;
+  height: 12em;
+  border-radius: 6.5em 6.5em 5em 5em;
+  background: #F2F2F2;
+  z-index: 50;
+}
+.eye {
+  top: 4em;
+  width: 3em;
+  height: 3em;
+  background: #2E2E2E;
+  border-radius: 50%;
+  z-index: 100;
+}
+.left {
+  left: 3em;
+}
+.right {
+  right: 3em;
+}
+.shine {
+  top: 0.22em;
+  left: 0.22em;
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 50%;
+  background: white;
+}
+.nose {
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  top: 7.5em;
+  width: 1.9em;
+  height: 1.1em;
+  border-radius: 50% 50% 35% 35%;
+  background: pink;
+  z-index: 960;
+}
+.mouth {
+  z-index: 950;
+}
+.mouth-left {
+  background: #fff;
+  width: 2.6em;
+  height: 2em;
+  border-radius: 50%;
+  top: 7.8em;
+  left: 4.7em;
+}
+.mouth-right {
+  background: #fff;
+  width: 2.6em;
+  height: 2em;
+  border-radius: 50%;
+  top: 7.8em;
+  left: 6.7em;
+}
+.ear-left {
+  background: #F2F2F2;
+  height: 14em;
+  width: 4em;
+  border-radius: 50%;
+  left: 6em;
+  top: 1.6em;
+  transform: rotate(-10deg);
+  z-index: 10;
+}
+.inner-ear-left {
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  background: #fff;
+  height: 10em;
+  width: 2.6em;
+  border-radius: 50%;
+  top: 3em;
+}
+.ear-right {
+  background: #F2F2F2;
+  height: 14em;
+  width: 4em;
+  border-radius: 50%;
+  right: 6em;
+  top: 1.6em;
+  transform: rotate(10deg);
+  z-index: 10;
+}
+.inner-ear-right {
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  background: #fff;
+  height: 10em;
+  width: 2.6em;
+  border-radius: 50%;
+  top: 3em;
+}
+.mark {
+  top: 11em;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: 7em;
+  height: 5em;
+  border-radius: 50% 50% 0 0;
+  background: #fff;
+}
+.mouth {
+  top: 9.6em;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  border-radius: 0 0 5em 5em;
+  width: 2em;
+  height: .6em;
+  background: pink;
+  z-index: 900;
+  transition: height 500ms ease-in-out;
+}
+.container:hover, .container:focus {
+  filter: brightness(1);
+  outline: 0;
+}
+.container:hover>.body>.mouth, .container:focus>.body>.mouth {
+  height: 1.6em;
+}
+.container:hover>.balloon-1, .container:focus>.balloon-1 {
+  animation: up 3s ease-in infinite;
+}
+.container:hover>.balloon-2, .container:focus>.balloon-2 {
+  animation: up 3s 300ms ease-in infinite;
+}
+.container:hover>.balloon-3, .container:focus>.balloon-3 {
+  animation: up 3s -100ms ease-in infinite;
+}
+.container:hover+.prompt, .container:focus+.prompt {
+  animation-play-state: running;
+}
+.balloon-1 {
+  background: red;
+  width: 6.6em;
+  height: 8em;
+  left: 2em;
+  top: 24em;
+  border-radius: 50%;
+  z-index: 0;
+}
+.inner-balloon-1 {
+  background: white;
+  opacity: 0.3;
+  width: 5.6em;
+  height: 7em;
+  left: 0em;
+  top: 0em;
+  border-radius: 50%;
+}
+.knot-1 {
+  background: red;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  width: 1em;
+  height: 1em;
+  top: 7.6em;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+}
+.line-1 {
+  width: 1px;
+  height: 6em;
+  background: grey;
+  top: 8.6em;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+}
+.balloon-2 {
+  background: blue;
+  width: 6em;
+  height: 7.4em;
+  left: 10em;
+  top: 24em;
+  border-radius: 50%;
+  z-index: 0;
+}
+.inner-balloon-2 {
+  background: white;
+  opacity: 0.3;
+  width: 5em;
+  height: 6.4em;
+  left: 0.1em;
+  top: 0.2em;
+  border-radius: 50%;
+}
+.knot-2 {
+  background: blue;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  width: 1em;
+  height: 1em;
+  top: 7.2em;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+}
+.line-2 {
+  width: 1px;
+  height: 6em;
+  background: grey;
+  top: 8.2em;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+}
+.balloon-3 {
+  background: yellow;
+  width: 6.6em;
+  height: 8em;
+  left: 17em;
+  top: 24em;
+  border-radius: 50%;
+  z-index: 0;
+}
+.inner-balloon-3 {
+  background: white;
+  opacity: 0.3;
+  width: 5.6em;
+  height: 7em;
+  left: 0em;
+  top: 0em;
+  border-radius: 50%;
+}
+.knot-3 {
+  background: yellow;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  width: 1em;
+  height: 1em;
+  top: 7.6em;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+}
+.line-3 {
+  width: 1px;
+  height: 6em;
+  background: grey;
+  top: 8.6em;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+}
+@keyframes up {
+  to {
+    top: -14em;
+  }
+}
+@media (max-height: 400px) {
+  body {
+    transform: scale(.55);
+  }
+}
+    </style>
+    <script>
+        alert("可将鼠标停留在兔头唤醒特效，页面30秒后将自动跳转到新页面，如果不想等待，可选择直接点击兔子头像")
+        window.onload = function() {
+            timer = setInterval("f1()", 30000)
+        }
+        function f1() { 
+            window.location.href = "index2.html"
+         }
+    </script>
+</head>
+<body>
+    <div class="container" tabindex="0" id="ico">
+        <div class="body">
+          <div class="eye left">
+            <div class="shine"></div>
+          </div>
+          <div class="eye right">
+            <div class="shine"></div>
+          </div>
+          <div class="nose"></div>
+          <div class="mouth"></div>
+        </div>
+        <div class="ear-left">
+          <div class="inner-ear-left"></div>
+        </div>
+        <div class="ear-right">
+          <div class="inner-ear-right"></div>
+        </div>
+        <div class="balloon-1">
+          <div class="inner-balloon-1"></div>
+          <div class="knot-1"></div>
+          <div class="line-1"></div>
+        </div>
+        <div class="balloon-2">
+          <div class="inner-balloon-2"></div>
+          <div class="knot-2"></div>
+          <div class="line-2"></div>
+        </div>
+        <div class="balloon-3">
+          <div class="inner-balloon-3"></div>
+          <div class="knot-3"></div>
+          <div class="line-3"></div>
+        </div>
+      </div>
+      <div class="prompt">恒 祝大家：
+        2023 新年快乐
+        （请点击兔头）
+    </div>
+    <script>
+        ico = document.getElementById("ico")
+        ico.onclick = function() {
+	window.location.href = 'index2.html'
+}
+    </script>
+</body>
+</html>

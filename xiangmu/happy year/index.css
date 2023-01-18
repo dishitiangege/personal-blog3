@@ -1,0 +1,38 @@
+html,
+body {
+    padding: 0px;
+    margin: 0px;
+    background: #222;
+    font-family: 'Karla', sans-serif;
+    color: #fff;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.title {
+    z-index: 1000;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    border: 2px solid #fff;
+    padding: 7.5px 15px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+h1 {
+    text-align: right;
+    font-size: 46px;
+}
+
+h2 {
+    font-size: 36px;
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
+}
