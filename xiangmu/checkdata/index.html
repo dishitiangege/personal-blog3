@@ -1,0 +1,2280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多文件BOM数据比对工具</title>
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
+    <link href="./css/all.min.css" rel="stylesheet">
+    <script src="./js/xlsx.full.min.js"></script>
+    <script src="./js/FileSaver.min.js"></script>
+    <style>
+        .container-fluid {
+            max-width: 1600px;
+        }
+        
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            transition: box-shadow 0.15s ease-in-out;
+        }
+        
+        .card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        
+        .header-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .upload-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+        
+        .file-card {
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            transition: border-color 0.15s ease-in-out;
+        }
+        
+        .file-card.dragover {
+            border-color: #0d6efd;
+            background-color: rgba(13, 110, 253, 0.1);
+        }
+        
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 0.375rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        .upload-area:hover {
+            border-color: #6c757d;
+        }
+        
+        .file-info {
+            background: #e9ecef;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            margin-top: 0.5rem;
+        }
+        
+        .file-settings {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-top: 0.5rem;
+        }
+        
+        .results-section {
+            min-height: 400px;
+        }
+        
+        /* 结果区域样式 */
+        .results-container {
+            display: flex;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .results-column {
+            flex: 1;
+            min-height: 600px;
+        }
+        
+        .column-header {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.375rem 0.375rem 0 0;
+            border: 1px solid #dee2e6;
+            border-bottom: none;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .column-content {
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding: 1rem;
+            background: white;
+        }
+
+        /* 网格布局样式 */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1rem;
+            padding: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 差异项窗口样式 */
+        .diff-window {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1060;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .diff-window-content {
+            background: white;
+            border-radius: 0.5rem;
+            width: 95%;
+            max-width: 1400px;
+            height: 90vh;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .diff-window-header {
+            background: #f8f9fa;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .diff-window-body {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .diff-window-toolbar {
+            background: #f8f9fa;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .diff-window-main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+        
+        .diff-products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            padding: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .diff-products-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .diff-window .product-card {
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .diff-window .product-card:hover {
+            transform: scale(1.02);
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .filter-btn {
+            padding: 0.375rem 0.75rem;
+            border: 1px solid #dee2e6;
+            background: white;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .filter-btn.active {
+            background: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+        
+        .filter-btn:hover {
+            background: #e9ecef;
+        }
+        
+        .filter-btn.active:hover {
+            background: #0b5ed7;
+        }
+        
+        .search-box {
+            max-width: 300px;
+        }
+        
+        .window-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0.25rem;
+        }
+        
+        .window-close-btn:hover {
+            color: #495057;
+        }
+
+        /* 简化主页面样式 */
+        .diff-summary-card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+        
+        .diff-summary-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .diff-summary-card:hover {
+            border-color: #ffc107;
+        }
+        
+        .card.h-100 {
+            min-height: 250px;
+        }
+        
+        .match-column .column-header {
+            background: #d1edff;
+            color: #0c63e4;
+        }
+        
+        .diff-column .column-header {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        /* 产品卡片样式 */
+        .product-card {
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            background: white;
+        }
+        
+        .product-card:hover {
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .product-card.match-card {
+            border-left: 4px solid #28a745;
+        }
+        
+        .product-card.diff-card {
+            border-left: 4px solid #ffc107;
+        }
+        
+        .product-card-header {
+            padding: 1rem;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            border-radius: 0.375rem 0.375rem 0 0;
+        }
+        
+        .product-card-body {
+            padding: 1rem;
+        }
+        
+        .product-id {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+        
+        .product-summary {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .difference-summary {
+            margin-top: 0.5rem;
+        }
+        
+        .diff-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            margin: 0.125rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .diff-badge.missing {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .diff-badge.extra {
+            background: #ffeaa7;
+            color: #856404;
+        }
+        
+        /* 详情页面样式 */
+        .detail-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1070;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .detail-content {
+            background: white;
+            border-radius: 0.5rem;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .detail-header {
+            background: #f8f9fa;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .detail-body {
+            padding: 1.5rem;
+            max-height: calc(90vh - 140px);
+            overflow-y: auto;
+        }
+        
+        .detail-footer {
+            background: #f8f9fa;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+        }
+        
+        .close-btn:hover {
+            color: #495057;
+        }
+        
+        /* 可折叠区域样式 */
+        .collapsible-section {
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+        
+        .collapsible-header {
+            background: #f8f9fa;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #dee2e6;
+            transition: background-color 0.2s ease-in-out;
+        }
+        
+        .collapsible-header:hover {
+            background: #e9ecef;
+        }
+        
+        .collapsible-header.collapsed {
+            border-bottom: none;
+        }
+        
+        .collapsible-content {
+            padding: 1rem;
+            display: none;
+        }
+        
+        .collapsible-content.show {
+            display: block;
+        }
+        
+        .expand-icon {
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .expand-icon.rotated {
+            transform: rotate(180deg);
+        }
+        
+        /* 表格样式 */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            border: 1px solid #dee2e6;
+            padding: 0.5rem;
+            text-align: left;
+        }
+        
+        .comparison-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .row-number {
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        
+        .match-row {
+            background-color: #d1edff !important;
+        }
+        
+        .missing-row {
+            background-color: #f8d7da !important;
+        }
+        
+        .extra-row {
+            background-color: #ffeaa7 !important;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .multi-select {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ced4da;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+        }
+        
+        .column-checkbox {
+            margin: 0.25rem 0;
+        }
+        
+        .remove-file-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+        
+        .range-input {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .range-input input {
+            width: 80px;
+        }
+        
+        .summary-card {
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .summary-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .navigation-btn {
+            min-width: 100px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-section">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <h1><i class="fas fa-file-excel"></i> 多文件BOM数据比对工具</h1>
+                    <p class="lead">支持多文件上传，智能行号追踪，分区展示比对结果</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- 文件上传区域 -->
+        <div class="upload-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4><i class="fas fa-upload"></i> 文件管理</h4>
+                <button class="btn btn-primary" onclick="addFileUpload()">
+                    <i class="fas fa-plus"></i> 添加文件
+                </button>
+            </div>
+            
+            <div id="files-container">
+                <!-- 文件上传项将动态添加到这里 -->
+            </div>
+            
+            <div class="mt-3">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle"></i> 
+                    支持上传多个Excel文件进行比对。每个文件可以单独设置数据范围。系统会自动记录原始行号便于定位。
+                </small>
+            </div>
+        </div>
+
+        <!-- 比对设置 -->
+        <div class="form-section d-none" id="comparison-settings">
+            <h4><i class="fas fa-cog"></i> 比对设置</h4>
+            <form id="comparison-form">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="primary-key" class="form-label">主键列（产品号）</label>
+                        <select class="form-control" id="primary-key" required>
+                            <option value="">请选择主键列</option>
+                        </select>
+                        <small class="text-muted">选择用于分组比对的产品号列</small>
+                    </div>
+                    <div class="col-md-8 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-search"></i> 开始比对
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label class="form-label">选择要比对的列</label>
+                        <div class="multi-select" id="columns-select">
+                            <div class="text-muted">请先上传文件</div>
+                        </div>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAllColumns()">全选</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAllColumns()">清空</button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">数据处理选项</label>
+                        <div class="card p-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="ignore-cell-format" checked>
+                                <label class="form-check-label" for="ignore-cell-format">
+                                    <strong>忽略单元格格式</strong>
+                                </label>
+                                <div class="mt-1">
+                                    <small class="text-muted">
+                                        开启后将统一处理数据格式，避免因Excel格式差异导致的误判。
+                                        <br>例如：数字 123 和文本 "123" 将被视为相同。
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="ignore-whitespace" checked>
+                                <label class="form-check-label" for="ignore-whitespace">
+                                    <strong>忽略空白字符</strong>
+                                </label>
+                                <div class="mt-1">
+                                    <small class="text-muted">
+                                        自动去除首尾空格和多余的空白字符。
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="debug-mode">
+                                <label class="form-check-label" for="debug-mode">
+                                    <strong>调试模式</strong>
+                                </label>
+                                <div class="mt-1">
+                                    <small class="text-muted">
+                                        开启后在浏览器控制台显示详细的数据处理日志。
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 结果显示 -->
+        <div class="results-section">
+            <div id="loading" class="loading d-none">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-3">正在分析产品物料组成，请稍候...</p>
+            </div>
+
+            <div id="results" class="d-none">
+                <!-- 统计摘要 -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card summary-card bg-success text-white">
+                            <div class="card-body">
+                                <div class="summary-number" id="products-count">0</div>
+                                <div>产品数量</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card summary-card bg-info text-white">
+                            <div class="card-body">
+                                <div class="summary-number" id="matched-products">0</div>
+                                <div>完全匹配</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card summary-card bg-warning text-white">
+                            <div class="card-body">
+                                <div class="summary-number" id="diff-products">0</div>
+                                <div>存在差异</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card summary-card bg-secondary text-white">
+                            <div class="card-body">
+                                <div class="summary-number" id="missing-products">0</div>
+                                <div>其他状态</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 导出按钮 -->
+                <div class="row mb-3">
+                    <div class="col-12 text-center">
+                        <button class="btn btn-success me-2" onclick="exportData('summary')">
+                            <i class="fas fa-download"></i> 导出汇总报告
+                        </button>
+                        <button class="btn btn-warning me-2" onclick="exportData('differences')">
+                            <i class="fas fa-download"></i> 导出差异详情
+                        </button>
+                        <button class="btn btn-primary" onclick="exportData('all')">
+                            <i class="fas fa-download"></i> 导出完整报告
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 简化的结果展示 -->
+                <div class="row">
+                    <!-- 完全匹配区域 -->
+                    <div class="col-md-6">
+                        <div class="card text-center h-100">
+                            <div class="card-body d-flex flex-column justify-content-center">
+                                <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                                <h3 class="text-success" id="match-count-display">0</h3>
+                                <h5>完全匹配的产品</h5>
+                                <p class="text-muted">所有文件中的物料清单完全一致</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 存在差异区域 -->
+                    <div class="col-md-6">
+                        <div class="card text-center h-100 diff-summary-card" style="cursor: pointer;" onclick="openDiffWindow()" id="diff-summary-card">
+                            <div class="card-body d-flex flex-column justify-content-center">
+                                <i class="fas fa-exclamation-triangle fa-4x text-warning mb-3"></i>
+                                <h3 class="text-warning" id="diff-count-display">0</h3>
+                                <h5>存在差异的产品</h5>
+                                <p class="text-muted mb-3">包含物料差异和产品缺失</p>
+                                <button class="btn btn-warning btn-lg" type="button">
+                                    <i class="fas fa-external-link-alt"></i> 点击查看详情
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 详情模态框 -->
+    <div class="detail-modal" id="detail-modal">
+        <div class="detail-content">
+            <div class="detail-header">
+                <h5 id="detail-title">产品详情</h5>
+                <button class="close-btn" onclick="closeDetail()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="detail-body" id="detail-body">
+                <!-- 详情内容将动态生成 -->
+            </div>
+            <div class="detail-footer">
+                <div>
+                    <button class="btn btn-outline-secondary navigation-btn" id="prev-btn" onclick="navigateProduct(-1)">
+                        <i class="fas fa-chevron-left"></i> 上一个
+                    </button>
+                    <button class="btn btn-outline-secondary navigation-btn ms-2" id="next-btn" onclick="navigateProduct(1)">
+                        下一个 <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div>
+                    <span class="text-muted" id="product-position">1 / 10</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 差异项专用窗口 -->
+    <div class="diff-window" id="diff-window">
+        <div class="diff-window-content">
+            <div class="diff-window-header">
+                <h5><i class="fas fa-exclamation-triangle text-warning"></i> 存在差异的产品</h5>
+                <button class="window-close-btn" onclick="closeDiffWindow()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="diff-window-body">
+                <div class="diff-window-toolbar">
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all" onclick="filterDiffProducts('all')">
+                            全部 <span id="filter-all-count">0</span>
+                        </button>
+                        <button class="filter-btn" data-filter="missing" onclick="filterDiffProducts('missing')">
+                            产品缺失 <span id="filter-missing-count">0</span>
+                        </button>
+                        <button class="filter-btn" data-filter="material_diff" onclick="filterDiffProducts('material_diff')">
+                            物料差异 <span id="filter-material-count">0</span>
+                        </button>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <input type="text" class="form-control search-box" placeholder="搜索产品号..." id="diff-search" onkeyup="searchDiffProducts()">
+                        <span class="text-muted">共 <span id="diff-total-count">0</span> 个产品</span>
+                    </div>
+                </div>
+                <div class="diff-window-main">
+                    <div class="diff-products-grid" id="diff-products-grid">
+                        <!-- 差异产品卡片将在这里生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./js/bootstrap.bundle.min.js"></script>
+    <script>
+        class BOMComparator {
+            constructor() {
+                this.files = [];
+                this.filesData = new Map();
+                this.currentResults = null;
+                this.selectedColumns = [];
+                this.fileIdCounter = 0;
+                this.currentProductIndex = 0;
+                this.productList = [];
+                this.diffProducts = [];
+                this.filteredDiffProducts = [];
+                this.currentFilter = 'all';
+                this.diffWindowScrollPosition = 0; // 记录专用窗口滚动位置
+                this.isFromDiffWindow = false; // 标记是否从专用窗口打开详情
+                this.dataProcessingOptions = {
+                    ignoreCellFormat: true,
+                    ignoreWhitespace: true
+                }; // 数据处理选项
+                this.init();
+            }
+
+            init() {
+                this.setupFormHandlers();
+                this.addFileUpload();
+                this.addFileUpload();
+            }
+
+            // 数据标准化函数
+            normalizeValue(value) {
+                if (value === null || value === undefined) {
+                    return '';
+                }
+
+                const originalValue = value;
+                const originalType = typeof value;
+                let normalizedValue = String(value);
+
+                // 如果开启忽略空白字符
+                if (this.dataProcessingOptions.ignoreWhitespace) {
+                    normalizedValue = normalizedValue.trim().replace(/\s+/g, ' ');
+                }
+
+                // 如果开启忽略单元格格式
+                if (this.dataProcessingOptions.ignoreCellFormat) {
+                    // 强化数字检测和处理
+                    const trimmedValue = normalizedValue.trim();
+                    
+                    // 检查是否为纯数字（包括小数、负数、科学计数法）
+                    const numericRegex = /^-?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
+                    
+                    if (numericRegex.test(trimmedValue)) {
+                        const numValue = parseFloat(trimmedValue);
+                        if (!isNaN(numValue) && isFinite(numValue)) {
+                            // 统一数字格式，去除多余的小数点和零
+                            const result = Number.isInteger(numValue) ? numValue.toString() : numValue.toString();
+                            
+                            // 调试日志：记录数字转换
+                            if (window.debugMode) {
+                                console.log('数字标准化:', {
+                                    原始值: originalValue,
+                                    原始类型: originalType,
+                                    字符串化: normalizedValue,
+                                    修剪后: trimmedValue,
+                                    解析数值: numValue,
+                                    最终结果: result
+                                });
+                            }
+                            
+                            return result;
+                        }
+                    }
+                    
+                    // 处理特殊的数字表示（如带千分符的数字）
+                    const cleanedForNumber = trimmedValue.replace(/,/g, '');
+                    if (numericRegex.test(cleanedForNumber)) {
+                        const numValue = parseFloat(cleanedForNumber);
+                        if (!isNaN(numValue) && isFinite(numValue)) {
+                            const result = Number.isInteger(numValue) ? numValue.toString() : numValue.toString();
+                            
+                            if (window.debugMode) {
+                                console.log('千分符数字标准化:', {
+                                    原始值: originalValue,
+                                    清理后: cleanedForNumber,
+                                    解析数值: numValue,
+                                    最终结果: result
+                                });
+                            }
+                            
+                            return result;
+                        }
+                    }
+                    
+                    // 处理布尔值
+                    const lowerValue = normalizedValue.toLowerCase();
+                    if (lowerValue === 'true' || lowerValue === 'false') {
+                        return lowerValue;
+                    }
+                    
+                    // 处理日期格式（简单处理）
+                    const dateRegex = /^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/;
+                    if (dateRegex.test(normalizedValue)) {
+                        // 统一日期格式为 YYYY-MM-DD
+                        return normalizedValue.replace(/\//g, '-');
+                    }
+                }
+
+                return normalizedValue;
+            }
+
+            // 比较两个值是否相等（考虑格式标准化）
+            isValueEqual(value1, value2) {
+                const normalized1 = this.normalizeValue(value1);
+                const normalized2 = this.normalizeValue(value2);
+                const result = normalized1 === normalized2;
+                
+                // 调试日志：显示标准化过程
+                if (!result && this.dataProcessingOptions.ignoreCellFormat) {
+                    console.log('数值比较:', {
+                        原始值1: value1, 类型1: typeof value1,
+                        原始值2: value2, 类型2: typeof value2,
+                        标准化后1: normalized1,
+                        标准化后2: normalized2,
+                        是否相等: result
+                    });
+                }
+                
+                return result;
+            }
+
+            setupFormHandlers() {
+                document.getElementById('comparison-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.compareData();
+                });
+
+                document.addEventListener('change', (e) => {
+                    if (e.target.matches('#columns-select input[type="checkbox"]')) {
+                        this.updateSelectedColumns();
+                    }
+                });
+
+                // ESC键关闭详情页面和差异窗口
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        if (document.getElementById('diff-window').style.display === 'flex') {
+                            this.closeDiffWindow();
+                        } else {
+                            this.closeDetail();
+                        }
+                    }
+                });
+            }
+
+            addFileUpload() {
+                const fileId = ++this.fileIdCounter;
+                const container = document.getElementById('files-container');
+                
+                const fileCard = document.createElement('div');
+                fileCard.className = 'file-card';
+                fileCard.setAttribute('data-file-id', fileId);
+                
+                fileCard.innerHTML = `
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">文件 ${fileId}</h6>
+                        ${this.files.length >= 2 ? `<button type="button" class="remove-file-btn" onclick="comparator.removeFile(${fileId})">
+                            <i class="fas fa-times"></i>
+                        </button>` : ''}
+                    </div>
+                    <div class="card-body">
+                        <div class="upload-area" onclick="document.getElementById('file-${fileId}').click()">
+                            <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                            <p class="mb-1">点击或拖拽Excel文件到此处</p>
+                            <small class="text-muted">支持 .xlsx, .xls 格式</small>
+                        </div>
+                        <input type="file" id="file-${fileId}" accept=".xlsx,.xls" style="display: none;">
+                        
+                        <div id="file-${fileId}-info" class="file-info d-none">
+                            <div class="file-name" id="file-${fileId}-name"></div>
+                            <div class="file-details" id="file-${fileId}-details"></div>
+                        </div>
+                        
+                        <div id="file-${fileId}-settings" class="file-settings d-none">
+                            <label class="form-label">数据范围设置</label>
+                        <div class="range-input">
+                            <span>从第</span>
+                            <input type="number" class="form-control" id="start-row-${fileId}" value="0" min="0">
+                            <span>行到第</span>
+                            <input type="number" class="form-control" id="end-row-${fileId}" value="0" min="0">
+                            <span>行</span>
+                        </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(fileCard);
+                
+                const fileInput = document.getElementById(`file-${fileId}`);
+                const uploadArea = fileCard.querySelector('.upload-area');
+                
+                fileInput.addEventListener('change', (e) => this.handleFileUpload(e, fileId));
+                this.setupDragAndDrop(uploadArea, fileInput, fileId);
+                
+                this.files.push({ id: fileId, uploaded: false });
+            }
+
+            removeFile(fileId) {
+                const fileCard = document.querySelector(`[data-file-id="${fileId}"]`);
+                if (fileCard) {
+                    fileCard.remove();
+                }
+                
+                this.filesData.delete(fileId);
+                this.files = this.files.filter(f => f.id !== fileId);
+                this.checkComparisonReadiness();
+            }
+
+            setupDragAndDrop(uploadArea, fileInput, fileId) {
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.closest('.file-card').classList.add('dragover');
+                });
+
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.closest('.file-card').classList.remove('dragover');
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.closest('.file-card').classList.remove('dragover');
+                    
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        fileInput.files = files;
+                        this.handleFileUpload({ target: fileInput }, fileId);
+                    }
+                });
+            }
+
+            async handleFileUpload(event, fileId) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                try {
+                    const data = await this.readExcelFile(file);
+                    
+                    this.filesData.set(fileId, {
+                        name: file.name,
+                        data: data.data,
+                        headers: data.headers,
+                        rowCount: data.rowCount,
+                        startRow: 0,
+                        endRow: data.rowCount - 1 // 默认显示所有行
+                    });
+
+                    this.updateFileInfo(fileId, file, data);
+                    this.updateFileInList(fileId, true);
+                    this.checkComparisonReadiness();
+
+                } catch (error) {
+                    console.error('文件读取失败:', error);
+                    alert(`文件读取失败: ${error.message}`);
+                }
+            }
+
+            async readExcelFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    
+                    reader.onload = (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            
+                            const firstSheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[firstSheetName];
+                            
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+                                header: 1,
+                                defval: ''
+                            });
+
+                            if (jsonData.length === 0) {
+                                reject(new Error('文件为空'));
+                                return;
+                            }
+
+                            const headers = jsonData[0];
+                            const rows = jsonData.slice(1);
+
+                            // 添加行号信息
+                            const processedData = rows.map((row, index) => {
+                                const obj = { __rowNumber: index + 2 }; // Excel行号从2开始（第1行是标题）
+                                headers.forEach((header, colIndex) => {
+                                    obj[header] = row[colIndex] || '';
+                                });
+                                return obj;
+                            });
+
+                            resolve({
+                                headers: headers,
+                                data: processedData,
+                                rowCount: rows.length,
+                                columnCount: headers.length
+                            });
+
+                        } catch (error) {
+                            reject(new Error('文件格式错误或文件损坏'));
+                        }
+                    };
+
+                    reader.onerror = () => reject(new Error('文件读取失败'));
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            updateFileInfo(fileId, file, data) {
+                const nameElement = document.getElementById(`file-${fileId}-name`);
+                const detailsElement = document.getElementById(`file-${fileId}-details`);
+                const infoElement = document.getElementById(`file-${fileId}-info`);
+                const settingsElement = document.getElementById(`file-${fileId}-settings`);
+                
+                const sizeKB = (file.size / 1024).toFixed(2);
+                nameElement.textContent = file.name;
+                detailsElement.textContent = `${sizeKB}KB, ${data.rowCount}行, ${data.columnCount}列`;
+                
+                // 设置默认范围为所有行
+                document.getElementById(`end-row-${fileId}`).value = data.rowCount - 1;
+                document.getElementById(`end-row-${fileId}`).max = data.rowCount - 1;
+                
+                infoElement.classList.remove('d-none');
+                settingsElement.classList.remove('d-none');
+            }
+
+            updateFileInList(fileId, uploaded) {
+                const fileIndex = this.files.findIndex(f => f.id === fileId);
+                if (fileIndex !== -1) {
+                    this.files[fileIndex].uploaded = uploaded;
+                }
+            }
+
+            checkComparisonReadiness() {
+                const uploadedFiles = this.files.filter(f => f.uploaded);
+                
+                if (uploadedFiles.length >= 2) {
+                    this.setupComparisonForm();
+                    document.getElementById('comparison-settings').classList.remove('d-none');
+                } else {
+                    document.getElementById('comparison-settings').classList.add('d-none');
+                }
+            }
+
+            setupComparisonForm() {
+                const commonColumns = this.getCommonColumns();
+                this.populatePrimaryKeySelect(commonColumns);
+                this.populateColumnSelect(commonColumns);
+            }
+
+            getCommonColumns() {
+                const uploadedFilesData = Array.from(this.filesData.values());
+                if (uploadedFilesData.length === 0) return [];
+                
+                let commonColumns = uploadedFilesData[0].headers;
+                
+                for (let i = 1; i < uploadedFilesData.length; i++) {
+                    commonColumns = commonColumns.filter(col => 
+                        uploadedFilesData[i].headers.includes(col)
+                    );
+                }
+                
+                return commonColumns;
+            }
+
+            populatePrimaryKeySelect(commonColumns) {
+                const select = document.getElementById('primary-key');
+                select.innerHTML = '<option value="">请选择主键列</option>';
+                
+                commonColumns.forEach(col => {
+                    select.innerHTML += `<option value="${col}">${col}</option>`;
+                });
+            }
+
+            populateColumnSelect(commonColumns) {
+                const container = document.getElementById('columns-select');
+                container.innerHTML = '';
+                
+                commonColumns.forEach(col => {
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'form-check column-checkbox';
+                    checkbox.innerHTML = `
+                        <input class="form-check-input" type="checkbox" value="${col}" id="col-${col}">
+                        <label class="form-check-label" for="col-${col}">${col}</label>
+                    `;
+                    container.appendChild(checkbox);
+                });
+
+                const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+                for (let i = 0; i < Math.min(5, checkboxes.length); i++) {
+                    checkboxes[i].checked = true;
+                }
+                this.updateSelectedColumns();
+            }
+
+            updateSelectedColumns() {
+                const checkboxes = document.querySelectorAll('#columns-select input[type="checkbox"]:checked');
+                this.selectedColumns = Array.from(checkboxes).map(cb => cb.value);
+            }
+
+            compareData() {
+                this.updateSelectedColumns();
+                
+                if (this.selectedColumns.length === 0) {
+                    alert('请至少选择一列进行比对');
+                    return;
+                }
+
+                const primaryKey = document.getElementById('primary-key').value;
+                if (!primaryKey) {
+                    alert('请选择主键列（产品号）');
+                    return;
+                }
+
+                // 读取数据处理选项
+                this.dataProcessingOptions.ignoreCellFormat = document.getElementById('ignore-cell-format').checked;
+                this.dataProcessingOptions.ignoreWhitespace = document.getElementById('ignore-whitespace').checked;
+                
+                // 设置调试模式
+                window.debugMode = document.getElementById('debug-mode').checked;
+                
+                console.log('数据处理选项:', this.dataProcessingOptions);
+                console.log('调试模式:', window.debugMode);
+
+                this.filesData.forEach((fileData, fileId) => {
+                    const startRow = parseInt(document.getElementById(`start-row-${fileId}`).value);
+                    const endRow = parseInt(document.getElementById(`end-row-${fileId}`).value);
+                    fileData.startRow = startRow;
+                    fileData.endRow = endRow;
+                });
+
+                this.showLoading();
+
+                setTimeout(() => {
+                    try {
+                        const results = this.performBOMComparison(primaryKey, this.selectedColumns);
+                        this.currentResults = results;
+                        this.displayResults(results);
+                        this.hideLoading();
+                    } catch (error) {
+                        console.error('比对失败:', error);
+                        alert('比对失败: ' + error.message);
+                        this.hideLoading();
+                    }
+                }, 100);
+            }
+
+            performBOMComparison(primaryKey, selectedColumns) {
+                const processedFiles = new Map();
+                
+                this.filesData.forEach((fileData, fileId) => {
+                    const dataSlice = fileData.data.slice(fileData.startRow, fileData.endRow + 1);
+                    const productGroups = new Map();
+                    
+                    dataSlice.forEach(row => {
+                        const rawProductId = row[primaryKey];
+                        if (!rawProductId || rawProductId === '') return;
+                        
+                        // 标准化主键列的值，确保格式一致
+                        const productId = this.normalizeValue(rawProductId);
+                        if (!productId || productId === '') return;
+                        
+                        // 调试日志：主键标准化
+                        if (window.debugMode && rawProductId !== productId) {
+                            console.log('主键标准化:', {
+                                原始主键: rawProductId,
+                                原始类型: typeof rawProductId,
+                                标准化后: productId,
+                                文件: fileData.name
+                            });
+                        }
+                        
+                        const filteredRow = { __rowNumber: row.__rowNumber };
+                        selectedColumns.forEach(col => {
+                            filteredRow[col] = row[col] || '';
+                        });
+                        
+                        if (!productGroups.has(productId)) {
+                            productGroups.set(productId, []);
+                        }
+                        productGroups.get(productId).push(filteredRow);
+                    });
+                    
+                    processedFiles.set(fileId, {
+                        name: fileData.name,
+                        productGroups: productGroups
+                    });
+                });
+
+                // 获取所有产品ID
+                const allProductIds = new Set();
+                processedFiles.forEach(fileData => {
+                    fileData.productGroups.forEach((materials, productId) => {
+                        allProductIds.add(productId);
+                    });
+                });
+
+                console.log(`总共发现 ${allProductIds.size} 个不同的产品`);
+
+                const comparisonResults = new Map();
+                let totalMatchedProducts = 0;
+                let totalDiffProducts = 0;
+
+                // 对每个产品进行比对
+                allProductIds.forEach(productId => {
+                    const productComparison = this.compareProductMaterials(productId, processedFiles, selectedColumns, primaryKey);
+                    
+                    // 确保每个产品只有一个最终状态
+                    if (comparisonResults.has(productId)) {
+                        console.warn(`警告：产品 ${productId} 重复处理`);
+                        return;
+                    }
+                    
+                    comparisonResults.set(productId, productComparison);
+                    
+                    if (productComparison.status === 'match') {
+                        totalMatchedProducts++;
+                    } else if (productComparison.status === 'diff') {
+                        totalDiffProducts++;
+                    }
+                    
+                    console.log(`产品 ${productId}: ${productComparison.status}${productComparison.subType ? ' (' + productComparison.subType + ')' : ''}`);
+                });
+
+                console.log(`比对完成: ${totalMatchedProducts} 个匹配, ${totalDiffProducts} 个差异`);
+
+                return {
+                    productComparisons: comparisonResults,
+                    summary: {
+                        totalProducts: allProductIds.size,
+                        matchedProducts: totalMatchedProducts,
+                        diffProducts: totalDiffProducts,
+                        missingProducts: 0
+                    },
+                    fileNames: Array.from(processedFiles.values()).map(f => f.name)
+                };
+            }
+
+            compareProductMaterials(productId, processedFiles, selectedColumns, primaryKey) {
+                const filesWithProduct = [];
+                const allFileNames = [];
+                
+                processedFiles.forEach((fileData, fileId) => {
+                    allFileNames.push(fileData.name);
+                    if (fileData.productGroups.has(productId)) {
+                        filesWithProduct.push({
+                            fileId: fileId,
+                            fileName: fileData.name,
+                            materials: fileData.productGroups.get(productId)
+                        });
+                    }
+                });
+
+                const missingFromFiles = allFileNames.filter(fileName => 
+                    !filesWithProduct.some(f => f.fileName === fileName)
+                );
+
+                let hasAnyDifference = false;
+                let hasMissingFiles = missingFromFiles.length > 0;
+                const detailedComparisons = [];
+                let statusMessage = '';
+
+                // 如果产品在部分文件中缺失
+                if (hasMissingFiles) {
+                    hasAnyDifference = true;
+                    statusMessage = `产品缺失于: ${missingFromFiles.join(', ')}`;
+                }
+
+                // 如果产品在多个文件中存在，比较物料差异
+                if (filesWithProduct.length > 1) {
+                    const baseFile = filesWithProduct[0];
+                    
+                    for (let i = 1; i < filesWithProduct.length; i++) {
+                        const compareFile = filesWithProduct[i];
+                        const comparison = this.compareMaterialLists(
+                            baseFile.materials, 
+                            compareFile.materials, 
+                            baseFile.fileName, 
+                            compareFile.fileName,
+                            selectedColumns,
+                            primaryKey
+                        );
+                        
+                        detailedComparisons.push(comparison);
+                        if (comparison.hasDifferences) {
+                            hasAnyDifference = true;
+                        }
+                    }
+                    
+                    // 综合状态信息
+                    if (hasMissingFiles && detailedComparisons.some(c => c.hasDifferences)) {
+                        statusMessage += `；存在物料差异`;
+                    } else if (detailedComparisons.some(c => c.hasDifferences)) {
+                        statusMessage = '存在物料差异';
+                    }
+                } else if (filesWithProduct.length === 1) {
+                    // 产品只在一个文件中存在
+                    statusMessage = `产品 ${productId} 只在文件 ${filesWithProduct[0].fileName} 中存在`;
+                }
+
+                // 确定子类型
+                let subType = 'complete_match';
+                if (hasAnyDifference) {
+                    if (hasMissingFiles && detailedComparisons.some(c => c.hasDifferences)) {
+                        subType = 'missing_and_diff'; // 既缺失又有差异
+                    } else if (hasMissingFiles) {
+                        subType = 'missing'; // 只是缺失
+                    } else {
+                        subType = 'material_diff'; // 只有物料差异
+                    }
+                }
+
+                return {
+                    productId: productId,
+                    status: hasAnyDifference ? 'diff' : 'match',
+                    subType: subType,
+                    files: filesWithProduct,
+                    missingFromFiles: missingFromFiles,
+                    message: statusMessage,
+                    comparisons: detailedComparisons,
+                    materialCount: filesWithProduct.length > 0 ? filesWithProduct[0].materials.length : 0
+                };
+            }
+
+            compareMaterialLists(materials1, materials2, fileName1, fileName2, selectedColumns, primaryKey) {
+                const matches = [];
+                const onlyInFile1 = [];
+                const onlyInFile2 = [];
+
+                const createMaterialFingerprint = (material) => {
+                    const filtered = {};
+                    selectedColumns.forEach(col => {
+                        if (col !== primaryKey) {
+                            // 使用标准化函数处理值
+                            filtered[col] = this.normalizeValue(material[col]);
+                        }
+                    });
+                    return JSON.stringify(filtered);
+                };
+
+                const materials2Fingerprints = new Map();
+                materials2.forEach((material, index) => {
+                    const fingerprint = createMaterialFingerprint(material);
+                    if (!materials2Fingerprints.has(fingerprint)) {
+                        materials2Fingerprints.set(fingerprint, []);
+                    }
+                    materials2Fingerprints.get(fingerprint).push({ material, index });
+                });
+
+                const usedIndices2 = new Set();
+
+                materials1.forEach((material1, index1) => {
+                    const fingerprint1 = createMaterialFingerprint(material1);
+                    
+                    if (materials2Fingerprints.has(fingerprint1)) {
+                        const candidates = materials2Fingerprints.get(fingerprint1);
+                        const available = candidates.find(c => !usedIndices2.has(c.index));
+                        
+                        if (available) {
+                            matches.push({
+                                material1: material1,
+                                material2: available.material,
+                                index1: index1,
+                                index2: available.index
+                            });
+                            usedIndices2.add(available.index);
+                        } else {
+                            onlyInFile1.push({ material: material1, index: index1 });
+                        }
+                    } else {
+                        onlyInFile1.push({ material: material1, index: index1 });
+                    }
+                });
+
+                materials2.forEach((material2, index2) => {
+                    if (!usedIndices2.has(index2)) {
+                        onlyInFile2.push({ material: material2, index: index2 });
+                    }
+                });
+
+                return {
+                    fileName1: fileName1,
+                    fileName2: fileName2,
+                    matches: matches,
+                    onlyInFile1: onlyInFile1,
+                    onlyInFile2: onlyInFile2,
+                    hasDifferences: onlyInFile1.length > 0 || onlyInFile2.length > 0,
+                    summary: {
+                        totalMaterials1: materials1.length,
+                        totalMaterials2: materials2.length,
+                        matchedMaterials: matches.length,
+                        onlyInFile1Count: onlyInFile1.length,
+                        onlyInFile2Count: onlyInFile2.length
+                    }
+                };
+            }
+
+            showLoading() {
+                document.getElementById('loading').classList.remove('d-none');
+                document.getElementById('results').classList.add('d-none');
+            }
+
+            hideLoading() {
+                document.getElementById('loading').classList.add('d-none');
+                document.getElementById('results').classList.remove('d-none');
+            }
+
+            displayResults(results) {
+                document.getElementById('products-count').textContent = results.summary.totalProducts;
+                document.getElementById('matched-products').textContent = results.summary.matchedProducts;
+                document.getElementById('diff-products').textContent = results.summary.diffProducts;
+                document.getElementById('missing-products').textContent = results.summary.missingProducts;
+
+                this.displaySeparatedResults(results);
+            }
+
+            displaySeparatedResults(results) {
+                const matchProducts = [];
+                const diffProducts = [];
+
+                results.productComparisons.forEach((comparison, productId) => {
+                    if (comparison.status === 'match') {
+                        matchProducts.push(comparison);
+                    } else {
+                        diffProducts.push(comparison);
+                    }
+                });
+
+                // 保存差异产品到实例变量
+                this.diffProducts = diffProducts;
+                this.filteredDiffProducts = diffProducts;
+
+                // 更新简化的显示
+                document.getElementById('match-count-display').textContent = matchProducts.length;
+                document.getElementById('diff-count-display').textContent = diffProducts.length;
+
+                // 控制差异卡片的显示状态
+                const diffCard = document.getElementById('diff-summary-card');
+                if (diffProducts.length > 0) {
+                    diffCard.style.display = 'block';
+                    diffCard.style.pointerEvents = 'auto';
+                    diffCard.style.opacity = '1';
+                } else {
+                    diffCard.style.pointerEvents = 'none';
+                    diffCard.style.opacity = '0.6';
+                }
+
+                // 保存产品列表用于导航
+                this.productList = [...matchProducts, ...diffProducts];
+                
+                console.log(`显示结果: ${matchProducts.length} 个匹配产品, ${diffProducts.length} 个差异产品`);
+            }
+
+            renderProductCards(container, products, type) {
+                if (products.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-${type === 'match' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                            <p>暂无${type === 'match' ? '完全匹配' : '存在差异'}的产品</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // 创建网格容器
+                const grid = document.createElement('div');
+                grid.className = 'products-grid';
+                
+                products.forEach((comparison, index) => {
+                    const card = this.createProductCard(comparison, type);
+                    card.addEventListener('click', () => this.showProductDetail(comparison, index));
+                    grid.appendChild(card);
+                });
+                
+                container.innerHTML = '';
+                container.appendChild(grid);
+            }
+
+            createProductCard(comparison, type) {
+                const card = document.createElement('div');
+                card.className = `product-card ${type}-card`;
+                
+                let summaryContent = '';
+                if (type === 'match') {
+                    summaryContent = `
+                        <div class="product-summary">
+                            <i class="fas fa-check text-success"></i> 所有文件中的物料清单完全一致
+                            <br><small class="text-muted">${comparison.materialCount || 0} 个物料项</small>
+                        </div>
+                    `;
+                } else {
+                    // 处理差异类型的产品
+                    let iconClass = 'fas fa-exclamation-triangle text-warning';
+                    let statusText = '存在差异';
+                    
+                    if (comparison.subType === 'missing') {
+                        iconClass = 'fas fa-times-circle text-danger';
+                        statusText = '产品缺失';
+                    } else if (comparison.subType === 'missing_and_diff') {
+                        iconClass = 'fas fa-times-circle text-danger';
+                        statusText = '缺失且存在差异';
+                    } else if (comparison.subType === 'material_diff') {
+                        iconClass = 'fas fa-exclamation-triangle text-warning';
+                        statusText = '物料差异';
+                    }
+                    
+                    if (comparison.subType === 'missing') {
+                        summaryContent = `
+                            <div class="product-summary">
+                                <i class="${iconClass}"></i> ${statusText}
+                                <div class="difference-summary">
+                                    <span class="diff-badge missing">
+                                        仅在${comparison.files[0].fileName}中存在
+                                    </span>
+                                </div>
+                                <small class="text-muted">${comparison.materialCount || comparison.files[0].materials.length} 个物料项</small>
+                            </div>
+                        `;
+                    } else {
+                        // 处理物料差异类型的产品（包括综合类型）
+                        let diffSummary = [];
+                        
+                        // 显示缺失文件信息
+                        if (comparison.missingFromFiles && comparison.missingFromFiles.length > 0) {
+                            diffSummary.push(`
+                                <span class="diff-badge missing">
+                                    缺失于: ${comparison.missingFromFiles.join(', ')}
+                                </span>
+                            `);
+                        }
+                        
+                        // 显示物料差异信息
+                        if (comparison.comparisons && comparison.comparisons.length > 0) {
+                            comparison.comparisons.forEach(comp => {
+                                if (comp.summary.onlyInFile1Count > 0) {
+                                    diffSummary.push(`
+                                        <span class="diff-badge missing">
+                                            仅在${comp.fileName1}: ${comp.summary.onlyInFile1Count}项
+                                        </span>
+                                    `);
+                                }
+                                if (comp.summary.onlyInFile2Count > 0) {
+                                    diffSummary.push(`
+                                        <span class="diff-badge extra">
+                                            仅在${comp.fileName2}: ${comp.summary.onlyInFile2Count}项
+                                        </span>
+                                    `);
+                                }
+                            });
+                        }
+                        
+                        summaryContent = `
+                            <div class="product-summary">
+                                <i class="${iconClass}"></i> ${statusText}
+                                <div class="difference-summary">
+                                    ${diffSummary.join('')}
+                                </div>
+                                <small class="text-muted">${comparison.materialCount || 0} 个物料项</small>
+                            </div>
+                        `;
+                    }
+                }
+
+                card.innerHTML = `
+                    <div class="product-card-header">
+                        <div class="product-id">${comparison.productId}</div>
+                        <small class="text-muted">点击查看详情</small>
+                    </div>
+                    <div class="product-card-body">
+                        ${summaryContent}
+                    </div>
+                `;
+
+                return card;
+            }
+
+            showProductDetail(comparison, index, fromDiffWindow = false) {
+                this.currentProductIndex = index;
+                this.isFromDiffWindow = fromDiffWindow;
+                
+                // 如果从专用窗口打开，记录滚动位置
+                if (fromDiffWindow) {
+                    const diffWindowBody = document.querySelector('#diff-window .window-body');
+                    if (diffWindowBody) {
+                        this.diffWindowScrollPosition = diffWindowBody.scrollTop;
+                    }
+                }
+                
+                document.getElementById('detail-title').textContent = `产品详情: ${comparison.productId}`;
+                document.getElementById('product-position').textContent = `${index + 1} / ${this.productList.length}`;
+                
+                // 更新导航按钮状态
+                document.getElementById('prev-btn').disabled = index === 0;
+                document.getElementById('next-btn').disabled = index === this.productList.length - 1;
+                
+                const detailBody = document.getElementById('detail-body');
+                detailBody.innerHTML = this.generateDetailContent(comparison);
+                
+                // 设置折叠功能
+                this.setupCollapsibleSections();
+                
+                document.getElementById('detail-modal').style.display = 'flex';
+            }
+
+            generateDetailContent(comparison) {
+                let statusText = '';
+                let statusClass = '';
+                
+                if (comparison.status === 'match') {
+                    statusText = '完全匹配';
+                    statusClass = 'success';
+                } else if (comparison.status === 'diff') {
+                    switch (comparison.subType) {
+                        case 'missing':
+                            statusText = '产品缺失';
+                            statusClass = 'danger';
+                            break;
+                        case 'material_diff':
+                            statusText = '物料差异';
+                            statusClass = 'warning';
+                            break;
+                        case 'missing_and_diff':
+                            statusText = '缺失且存在差异';
+                            statusClass = 'danger';
+                            break;
+                        default:
+                            statusText = '存在差异';
+                            statusClass = 'warning';
+                            break;
+                    }
+                }
+
+                let content = `
+                    <div class="mb-3">
+                        <h6>基本信息</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>产品号:</strong></td>
+                                <td>${comparison.productId}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>状态:</strong></td>
+                                <td>
+                                    <span class="badge bg-${statusClass}">
+                                        ${statusText}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>文件数量:</strong></td>
+                                <td>${comparison.files ? comparison.files.length : 0}</td>
+                            </tr>
+                        </table>
+                    </div>
+                `;
+
+                // 显示状态信息
+                if (comparison.message) {
+                    let alertClass = 'alert-warning';
+                    if (comparison.subType === 'missing' || comparison.subType === 'missing_and_diff') {
+                        alertClass = 'alert-danger';
+                    }
+                    content += `
+                        <div class="alert ${alertClass}">
+                            <i class="fas fa-info-circle"></i> ${comparison.message}
+                        </div>
+                    `;
+                }
+
+                // 显示缺失文件信息
+                if (comparison.missingFromFiles && comparison.missingFromFiles.length > 0) {
+                    content += `
+                        <div class="mb-3">
+                            <h6 class="text-danger">
+                                <i class="fas fa-times-circle"></i> 缺失于以下文件
+                            </h6>
+                            <div class="ms-3">
+                                ${comparison.missingFromFiles.map(fileName => 
+                                    `<span class="badge bg-danger me-1">${fileName}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // 显示数据处理选项状态
+                if (comparison.comparisons && comparison.comparisons.length > 0) {
+                    content += `
+                        <div class="mb-3">
+                            <h6><i class="fas fa-cog"></i> 数据处理设置</h6>
+                            <div class="ms-3">
+                                <span class="badge ${this.dataProcessingOptions.ignoreCellFormat ? 'bg-success' : 'bg-secondary'} me-1">
+                                    ${this.dataProcessingOptions.ignoreCellFormat ? '✓' : '✗'} 忽略单元格格式
+                                </span>
+                                <span class="badge ${this.dataProcessingOptions.ignoreWhitespace ? 'bg-success' : 'bg-secondary'} me-1">
+                                    ${this.dataProcessingOptions.ignoreWhitespace ? '✓' : '✗'} 忽略空白字符
+                                </span>
+                            </div>
+                            <small class="text-muted ms-3">
+                                开启格式忽略后，数字123和文本"123"将被视为相同
+                            </small>
+                        </div>
+                    `;
+                }
+                
+                // 显示物料差异比对信息（无论是否有缺失文件）
+                if (comparison.comparisons && comparison.comparisons.length > 0) {
+                    comparison.comparisons.forEach((comp, compIndex) => {
+                        content += this.generateComparisonSection(comp, compIndex);
+                    });
+                }
+
+                return content;
+            }
+
+            generateComparisonSection(comparison, index) {
+                const sectionId = `comparison-${index}`;
+                
+                return `
+                    <div class="collapsible-section">
+                        <div class="collapsible-header" data-target="${sectionId}">
+                            <span>
+                                <strong>${comparison.fileName1} vs ${comparison.fileName2}</strong>
+                                <span class="ms-2">
+                                    <span class="badge bg-success">匹配: ${comparison.summary.matchedMaterials}</span>
+                                    <span class="badge bg-warning ms-1">差异: ${comparison.summary.onlyInFile1Count + comparison.summary.onlyInFile2Count}</span>
+                                </span>
+                            </span>
+                            <i class="fas fa-chevron-down expand-icon"></i>
+                        </div>
+                        <div class="collapsible-content" id="${sectionId}">
+                            ${this.generateComparisonTable(comparison)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateComparisonTable(comparison) {
+                let content = '';
+
+                // 匹配的物料
+                if (comparison.matches.length > 0) {
+                    content += `
+                        <div class="mb-3">
+                            <h6 class="text-success"><i class="fas fa-check"></i> 匹配的物料 (${comparison.matches.length})</h6>
+                            <table class="comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th>${comparison.fileName1}<br>行号</th>
+                                        <th>${comparison.fileName2}<br>行号</th>
+                                        ${this.selectedColumns.map(col => `<th>${col}</th>`).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${comparison.matches.map(match => `
+                                        <tr class="match-row">
+                                            <td class="row-number">${match.material1.__rowNumber}</td>
+                                            <td class="row-number">${match.material2.__rowNumber}</td>
+                                            ${this.selectedColumns.map(col => `<td>${match.material1[col] || ''}</td>`).join('')}
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                // 仅在第一个文件中的物料
+                if (comparison.onlyInFile1.length > 0) {
+                    content += `
+                        <div class="mb-3">
+                            <h6 class="text-warning"><i class="fas fa-exclamation-triangle"></i> 仅在 ${comparison.fileName1} 中存在 (${comparison.onlyInFile1.length})</h6>
+                            <table class="comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th>${comparison.fileName1}<br>行号</th>
+                                        ${this.selectedColumns.map(col => `<th>${col}</th>`).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${comparison.onlyInFile1.map(item => `
+                                        <tr class="missing-row">
+                                            <td class="row-number">${item.material.__rowNumber}</td>
+                                            ${this.selectedColumns.map(col => `<td>${item.material[col] || ''}</td>`).join('')}
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                // 仅在第二个文件中的物料
+                if (comparison.onlyInFile2.length > 0) {
+                    content += `
+                        <div class="mb-3">
+                            <h6 class="text-danger"><i class="fas fa-times"></i> 仅在 ${comparison.fileName2} 中存在 (${comparison.onlyInFile2.length})</h6>
+                            <table class="comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th>${comparison.fileName2}<br>行号</th>
+                                        ${this.selectedColumns.map(col => `<th>${col}</th>`).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${comparison.onlyInFile2.map(item => `
+                                        <tr class="extra-row">
+                                            <td class="row-number">${item.material.__rowNumber}</td>
+                                            ${this.selectedColumns.map(col => `<td>${item.material[col] || ''}</td>`).join('')}
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                return content;
+            }
+
+            setupCollapsibleSections() {
+                document.querySelectorAll('.collapsible-header').forEach(header => {
+                    header.addEventListener('click', () => {
+                        const targetId = header.getAttribute('data-target');
+                        const content = document.getElementById(targetId);
+                        const icon = header.querySelector('.expand-icon');
+                        
+                        if (content.classList.contains('show')) {
+                            content.classList.remove('show');
+                            icon.classList.remove('rotated');
+                            header.classList.add('collapsed');
+                        } else {
+                            content.classList.add('show');
+                            icon.classList.add('rotated');
+                            header.classList.remove('collapsed');
+                        }
+                    });
+                });
+            }
+
+            navigateProduct(direction) {
+                const newIndex = this.currentProductIndex + direction;
+                if (newIndex >= 0 && newIndex < this.productList.length) {
+                    this.showProductDetail(this.productList[newIndex], newIndex);
+                }
+            }
+
+            closeDetail() {
+                document.getElementById('detail-modal').style.display = 'none';
+                
+                // 如果是从专用窗口打开的详情，恢复滚动位置（专用窗口应该仍然在后台显示）
+                if (this.isFromDiffWindow) {
+                    this.isFromDiffWindow = false;
+                    
+                    // 恢复滚动位置
+                    setTimeout(() => {
+                        const diffWindowBody = document.querySelector('#diff-window .window-body');
+                        if (diffWindowBody && this.diffWindowScrollPosition) {
+                            diffWindowBody.scrollTop = this.diffWindowScrollPosition;
+                            this.diffWindowScrollPosition = 0;
+                        }
+                    }, 50);
+                }
+            }
+
+            openDiffWindow() {
+                // 初始化差异窗口
+                this.initDiffWindow();
+                document.getElementById('diff-window').style.display = 'flex';
+            }
+
+            closeDiffWindow() {
+                document.getElementById('diff-window').style.display = 'none';
+            }
+
+            initDiffWindow() {
+                // 计算各类型数量
+                const missingCount = this.diffProducts.filter(p => p.subType === 'missing').length;
+                const materialDiffCount = this.diffProducts.filter(p => p.subType === 'material_diff').length;
+
+                // 更新计数
+                document.getElementById('filter-all-count').textContent = this.diffProducts.length;
+                document.getElementById('filter-missing-count').textContent = missingCount;
+                document.getElementById('filter-material-count').textContent = materialDiffCount;
+                document.getElementById('diff-total-count').textContent = this.diffProducts.length;
+
+                // 重置筛选状态
+                this.currentFilter = 'all';
+                this.filteredDiffProducts = this.diffProducts;
+                document.getElementById('diff-search').value = '';
+
+                // 更新筛选按钮状态
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelector('[data-filter="all"]').classList.add('active');
+
+                // 渲染产品
+                this.renderDiffWindow();
+            }
+
+            renderDiffWindow() {
+                const container = document.getElementById('diff-products-grid');
+                
+                if (this.filteredDiffProducts.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-12">
+                            <div class="empty-state">
+                                <i class="fas fa-search"></i>
+                                <p>没有找到匹配的产品</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = '';
+                
+                this.filteredDiffProducts.forEach((comparison, index) => {
+                    const card = this.createProductCard(comparison, 'diff');
+                    card.addEventListener('click', () => {
+                        // 在窗口中点击时，标记来源并显示详情
+                        this.showProductDetail(comparison, index, true); // 标记来源于专用窗口
+                    });
+                    container.appendChild(card);
+                });
+            }
+
+            filterDiffProducts(filterType) {
+                this.currentFilter = filterType;
+                
+                // 更新按钮状态
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelector(`[data-filter="${filterType}"]`).classList.add('active');
+
+                // 应用筛选
+                this.applyDiffFilters();
+            }
+
+            searchDiffProducts() {
+                // 应用筛选（包含搜索）
+                this.applyDiffFilters();
+            }
+
+            applyDiffFilters() {
+                const searchTerm = document.getElementById('diff-search').value.toLowerCase();
+                
+                // 先按类型筛选
+                let filtered = this.diffProducts;
+                if (this.currentFilter !== 'all') {
+                    filtered = this.diffProducts.filter(p => p.subType === this.currentFilter);
+                }
+
+                // 再按搜索词筛选
+                if (searchTerm) {
+                    filtered = filtered.filter(p => 
+                        p.productId.toLowerCase().includes(searchTerm)
+                    );
+                }
+
+                this.filteredDiffProducts = filtered;
+                document.getElementById('diff-total-count').textContent = filtered.length;
+                this.renderDiffWindow();
+            }
+
+            exportData(type) {
+                if (!this.currentResults) {
+                    alert('请先进行数据比对');
+                    return;
+                }
+
+                try {
+                    const workbook = XLSX.utils.book_new();
+
+                    if (type === 'summary' || type === 'all') {
+                        const summaryData = [];
+                        this.currentResults.productComparisons.forEach((comparison, productId) => {
+                            const row = {
+                                '产品号': productId,
+                                '状态': comparison.status === 'match' ? '完全匹配' : 
+                                       comparison.status === 'diff' ? '存在差异' : '缺失',
+                                '文件数量': comparison.files ? comparison.files.length : 0,
+                                '物料数量': comparison.materialCount || 0
+                            };
+
+                            if (comparison.comparisons) {
+                                comparison.comparisons.forEach(comp => {
+                                    row[`${comp.fileName1}_物料数`] = comp.summary.totalMaterials1;
+                                    row[`${comp.fileName2}_物料数`] = comp.summary.totalMaterials2;
+                                    row[`匹配物料数`] = comp.summary.matchedMaterials;
+                                    row[`仅在${comp.fileName1}`] = comp.summary.onlyInFile1Count;
+                                    row[`仅在${comp.fileName2}`] = comp.summary.onlyInFile2Count;
+                                });
+                            }
+
+                            summaryData.push(row);
+                        });
+
+                        const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+                        XLSX.utils.book_append_sheet(workbook, summarySheet, '比对汇总');
+                    }
+
+                    if (type === 'differences' || type === 'all') {
+                        const diffData = [];
+                        this.currentResults.productComparisons.forEach((comparison, productId) => {
+                            if (comparison.status === 'diff' && comparison.comparisons) {
+                                comparison.comparisons.forEach(comp => {
+                                    comp.onlyInFile1.forEach(item => {
+                                        const row = {
+                                            '产品号': productId,
+                                            '差异类型': `仅在${comp.fileName1}中`,
+                                            '文件名': comp.fileName1,
+                                            '文件中的行号': item.material.__rowNumber,
+                                            ...item.material
+                                        };
+                                        delete row.__rowNumber;
+                                        diffData.push(row);
+                                    });
+
+                                    comp.onlyInFile2.forEach(item => {
+                                        const row = {
+                                            '产品号': productId,
+                                            '差异类型': `仅在${comp.fileName2}中`,
+                                            '文件名': comp.fileName2,
+                                            '文件中的行号': item.material.__rowNumber,
+                                            ...item.material
+                                        };
+                                        delete row.__rowNumber;
+                                        diffData.push(row);
+                                    });
+                                });
+                            }
+                        });
+
+                        if (diffData.length > 0) {
+                            const diffSheet = XLSX.utils.json_to_sheet(diffData);
+                            XLSX.utils.book_append_sheet(workbook, diffSheet, '差异详情');
+                        }
+                    }
+
+                    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                    const filename = `BOM_comparison_${type}_${timestamp}.xlsx`;
+
+                    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+                    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+                    saveAs(blob, filename);
+
+                } catch (error) {
+                    console.error('导出失败:', error);
+                    alert('导出失败: ' + error.message);
+                }
+            }
+        }
+
+        // 全局函数
+        function selectAllColumns() {
+            const checkboxes = document.querySelectorAll('#columns-select input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = true);
+            comparator.updateSelectedColumns();
+        }
+
+        function clearAllColumns() {
+            const checkboxes = document.querySelectorAll('#columns-select input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+            comparator.updateSelectedColumns();
+        }
+
+        function exportData(type) {
+            comparator.exportData(type);
+        }
+
+        function addFileUpload() {
+            comparator.addFileUpload();
+        }
+
+        function closeDetail() {
+            comparator.closeDetail();
+        }
+
+        function navigateProduct(direction) {
+            comparator.navigateProduct(direction);
+        }
+
+        function openDiffWindow() {
+            comparator.openDiffWindow();
+        }
+
+        function closeDiffWindow() {
+            comparator.closeDiffWindow();
+        }
+
+        function filterDiffProducts(filterType) {
+            comparator.filterDiffProducts(filterType);
+        }
+
+        function searchDiffProducts() {
+            comparator.searchDiffProducts();
+        }
+
+        // 测试数字标准化功能
+        function testNormalization() {
+            window.debugMode = true;
+            console.log('=== 数字标准化测试 ===');
+            
+            const testCases = [
+                [123, "123"],           // 数字 vs 字符串
+                [123.0, "123"],         // 浮点数 vs 字符串
+                ["123", "123"],         // 字符串 vs 字符串
+                [0, "0"],               // 零
+                [45.67, "45.67"],       // 小数
+                ["  123  ", "123"],     // 带空格
+                ["1,234", "1234"],      // 千分符
+            ];
+            
+            testCases.forEach(([val1, val2], index) => {
+                const norm1 = comparator.normalizeValue(val1);
+                const norm2 = comparator.normalizeValue(val2);
+                const equal = norm1 === norm2;
+                console.log(`测试 ${index + 1}: ${val1} (${typeof val1}) vs ${val2} (${typeof val2})`);
+                console.log(`标准化: "${norm1}" vs "${norm2}" - 相等: ${equal}`);
+                console.log('---');
+            });
+            
+            window.debugMode = false;
+        }
+
+        // 初始化应用
+        const comparator = new BOMComparator();
+        
+        // 在控制台提供测试函数
+        window.testNormalization = testNormalization;
+        console.log('💡 提示：在控制台运行 testNormalization() 来测试数字标准化功能');
+    </script>
+</body>
+</html>
